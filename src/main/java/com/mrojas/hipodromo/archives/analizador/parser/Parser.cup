@@ -1,0 +1,92 @@
+package com.mrojas.hipodromo.archives.analizador.parser;
+
+import java_cup.runtime.*;
+import com.mrojas.hipodromo.models.*;
+import com.mrojas.hipodromo.util.ListaEnlazada;
+import javax.swing.JOptionPane;
+
+//hacer importaciones de paquetes propios de la util de java
+
+parser code {:
+
+    private ListaEnlazada<Apuesta> apuestas = new ListaEnlazada<>();
+
+    public ListaEnlazada<Apuesta> getApuestas(){
+        return this.apuestas;
+    }
+
+    public void setApuestas(ListaEnlazada<Apuesta> apuestas){
+        this.apuestas = apuestas;
+    }
+
+    /**
+     * Método al que se llama automáticamente ante algún error sintactico.
+     **/ 
+    public void syntax_error(Symbol s){
+
+        
+        System.out.println("Error Sintáctico en la Línea " + (s.left) +
+        " Columna "+s.right+ ". No se esperaba este componente: " +s.value+"."); 
+        
+    }
+
+    /**
+     * Método al que se llama automáticamente ante algún error sintáctico 
+     * en el que ya no es posible una recuperación de errores.
+     **/ 
+    public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception{ 
+        String error = "Error síntactico irrecuperable en la Línea " + 
+        (s.left)+ " Columna "+s.right+". Componente " + s.value + 
+        " no reconocido.";
+        JOptionPane.showMessageDialog(null, error, "Error Sintáctico", JOptionPane.ERROR_MESSAGE);
+        System.out.println(error);
+    }
+
+    private Horse[] apuestaHorse(Double[] posiciones){
+        Horse[] caballos = new Horse[10];
+        for(int i = 0; i<caballos.length ; i++){
+            if(posiciones[i] > 0 && posiciones[i] < 11){
+                int posicion = (int) posiciones[i].doubleValue();
+                Horse aux = Hipodromo.COMPETIDORES[posicion-1];
+                Horse agregar = new Horse(aux.getName(),aux.getNumero());
+                agregar.setLugar(i+1);
+                caballos[i] = agregar;
+            }else{
+                return null;
+            }
+        }
+        return caballos;
+    }
+
+    private void agregarApuesta(String name, Double monto, Double[] posiciones){
+        Horse[] caballos = apuestaHorse(posiciones);
+        if(caballos != null){
+            apuestas.push(new Apuesta(name, monto, caballos));
+        }
+    }
+
+:}
+
+/* TERMINALES PARA NUMEROS */
+terminal Double NUM;
+terminal String NAME;
+
+/*no-terminales para inicio de la app*/
+non terminal Apuesta apuesta;
+
+
+
+/* The grammar */
+start with apuesta;
+
+apuesta ::= NAME:name NUM:monto NUM:a NUM:b NUM:c NUM:d NUM:e NUM:f NUM:g NUM:h NUM:i NUM:j
+                                                                                                    {:
+                                                                                                        agregarApuesta(name, monto, new Double[] {a,b,c,d,e,f,g,h,i,j});
+                                                                                                    :}
+    | NAME:name NUM:monto NUM:a NUM:b NUM:c NUM:d NUM:e NUM:f NUM:g NUM:h NUM:i NUM:j apuesta       {:
+                                                                                                        agregarApuesta(name, monto, new Double[] {a,b,c,d,e,f,g,h,i,j});
+                                                                                                    :}
+    | error NAME
+    | error NUM
+    | error
+    ;
